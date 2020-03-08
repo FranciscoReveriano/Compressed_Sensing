@@ -55,7 +55,7 @@ print("Original Image")
 print("X:", P, "Y:",Q)
 
 # Create Transformation matrix
-dimension = (3,3)                                                                                                       # Dimension for Block
+dimension = (4,4)                                                                                                       # Dimension for Block
 T_Matrix = DCT_Matrix(dimension[0], dimension[1])
 print("Transformation matrix:",T_Matrix.shape)
 
@@ -70,7 +70,6 @@ print("First C Flatten Shape:", c.shape)                                        
 # Make the Mask Matrix
 ## Using Random Number Generator to Create Mask to Smaple
 mask = np.random.randint(2, size=c.shape)
-print("Mask:", mask)
 print("Mask Shape:",mask.shape)
 print("Mask Non-Sparse Values:", count_non_sparse_values(mask))
 
@@ -86,17 +85,14 @@ print("B Non-Sparse Values:", B_values)
 assert(B_values == B_Matrix.shape[0])
 
 # Convert the T Matrix to A
+A_Matrix = convert_T_to_A(mask, T_Matrix)
+A_values = count_non_sparse_values(A_Matrix.T[0])
+print("A Non-Sparse Values:", A_values)
 
+# Need to Random Initialize Alpha
+alpha = np.random.random_sample(T_Matrix[1].shape)                                                                      # Alpha is randomly initiliazed
 
-# Now we Need to Convert the T Matrix into Smaller A Matrix
-A_matrix = (T_Matrix.T * mask).T                                                                                        # Multiply the matrix by mask to make sparse
-# We Shrink the Matrix
-A_Values = count_non_sparse_values(A_matrix.T[0])
-print("A: Matrix\n", A_matrix)
-print("T Non-Sparse Values:",A_Values)
-## Now I need to Convert To Smaller Matrix
-A_matrix_small = np.zeros((A_Values,T_Matrix.shape[0]))
-print(A_matrix_small.shape)
-
-A = A_matrix[A_matrix != 0]
-print(A.reshape(A_matrix_small.shape))
+# At this point we need to set up our optimizer
+print("B Shape:", B_Matrix.shape)
+print("A Shape:", A_Matrix.shape)
+print("Alpha Shape:", alpha.shape)

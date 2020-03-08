@@ -22,4 +22,15 @@ def convert_C_to_B(values, matrix):
             j += 1
     return B_Matrix
 
-def convert_T_to_A(mask, T_matrix):
+def convert_T_to_A(mask, T_Matrix):
+    # Now we Need to Convert the T Matrix into Smaller A Matrix
+    A_matrix = (T_Matrix.T * mask).T                                                                                    # Multiply the matrix by mask to make sparse
+    # We Shrink the Matrix
+    A_Values = count_non_sparse_values(A_matrix.T[0])
+    #print("A: Matrix\n", A_matrix)
+    #print("T Non-Sparse Values:", A_Values)
+    ## Now I need to Convert To Smaller Matrix
+    A_matrix_small = np.zeros((A_Values, T_Matrix.shape[0]))                                                            # Create Empty Numpy Array To Get Proper Dimensions
+    A = A_matrix[A_matrix != 0]                                                                                         # Get All the Non-Zero Values
+    A = A.reshape(A_matrix_small.shape)                                                                                 # Reshape To Correct Dimensions
+    return A                                                                                                            # Return A Matrix
