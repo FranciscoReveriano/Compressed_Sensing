@@ -4,8 +4,9 @@
 # import ext libs
 import numpy as np
 import math
-import pandas as pd
 import matplotlib.pyplot as plt
+from DCT.DCT_Matrix import DCT_Matrix
+from util.util import *
 from scipy.fftpack import fft, dct
 import cv2
 from sklearn.feature_extraction import image
@@ -46,60 +47,56 @@ def imgRecover(imgIn, blkSize, numSample):
 
 boat = "fishing_boat.bmp"
 lena = "lena.bmp"
-dimension = (8,8)
 
-# Read the Images
+# Read the Boat Images
 matrix = imgRead(boat)                                                                                                  # Read Image into Matrix
 P, Q = matrix.shape                                                                                                     # Width and Length of Matrix
+print("Original Image")
 print("X:", P, "Y:",Q)
-## Create the DCT Matrix
-DCT = np.zeros((P,Q))                                                                                                   # DCT Matrix
-# First Create Empty Zero NP Matrix
-for x in range(P):
-    for y in range(Q):
-        # This is just to make the following of the math formula easier
-        u = x
-        v = y
-        # Calculate A
-        if u == 1:
-            a = math.sqrt(1/P)
-        else:
-            a = math.sqrt(2/P)
-        # Calculate B
-        if v == 1:
-            b = math.sqrt(1/Q)
-        else:
-            b = math.sqrt(2/Q)
-        # Make the G Calculation
-        DCT[x][y] = a * b * math.cos((math.pi * (2*x + 1)*(u-1))/(2*P)) * math.cos((math.pi * (2* y - 1) * (v-1))/(2*Q))# Calculate the Matrix
 
+# Create Transformation matrix
+dimension = (3,3)                                                                                                       # Dimension for Block
+T_Matrix = DCT_Matrix(dimension[0], dimension[1])
+print("Transformation matrix:",T_Matrix.shape)
 
-# Create Flat Original Image Matrix
-flat_original_matrix = matrix.flatten()
-assert(P*Q == flat_original_matrix.shape[0])                                                                            # Make sure that the matrix shape is correct
-print("Flat Matrix Shape:", flat_original_matrix.shape)
+# Split the Image Into Patches
+patches_original_image = image.extract_patches_2d(matrix,dimension)                                                     # Turn into Patches the main Matrix
+print("Patch Original Shape:",patches_original_image[0].shape)
 
-# patches_original_image = image.extract_patches_2d(matrix,dimension)                                                     # Turn into Patches the main Matrix
-# patches_dct_matrix = image.extract_patches_2d(DCT, dimension)                                                           # Turn into Patches the DCT Matrix
+# Test With First Patch
+c = patches_original_image[0].flatten()
+print("First C Flatten Shape:", c.shape)                                                                                # Dimension Shape should be Dim[0] * Dim[1]
 
 # Make the Mask Matrix
 ## Using Random Number Generator to Create Mask to Smaple
-mask = np.random.randint(2,size=flat_original_matrix.shape)
+mask = np.random.randint(2, size=c.shape)
+print("Mask:", mask)
+print("Mask Shape:",mask.shape)
+print("Mask Non-Sparse Values:", count_non_sparse_values(mask))
 
 # Get the New Sparse matrix
-new_matrix = mask * flat_original_matrix                                                                                # Taking Dot Product
+new_matrix = mask * c                                                                                                   # Taking Dot Product
 ## The Next Part is minimizing this matrix
-values = 0                                                                                                              # Size of Non-Discrete Values
-for i in range(len(new_matrix)):                                                                                        # This part is to calculate how many values are not null values
-    if new_matrix[i] != 0:
-        values += 1
-B_Matrix = np.zeros((values))
-assert(len(B_Matrix) == values)                                                                                         # Make sure the matrix size is correct to fit the values
-j = 0                                                                                                                    # Index Number of B Matrix
-for i in range(len(new_matrix)):                                                                                        # Go Through the C Matrix
-    if new_matrix[i] != 0:                                                                                              # if value is not discrete we put it into the new B
-        B_Matrix[j] = new_matrix[i]
-        j += 1
+C_values = count_non_sparse_values(new_matrix)                                                                          # Count the Values in the C Matrix that are non-sparse
+print("C Non-Sparse Values:", C_values)
+## Next part is creating the new sparse C matrix
+B_Matrix = convert_C_to_B(C_values, new_matrix)
+B_values = count_non_sparse_values(B_Matrix)
+print("B Non-Sparse Values:", B_values)
+assert(B_values == B_Matrix.shape[0])
 
-# Now we Need to Arrange the new smaller A Matrix
-new_matrix = mask * DCT
+# Convert the T Matrix to A
+
+
+# Now we Need to Convert the T Matrix into Smaller A Matrix
+A_matrix = (T_Matrix.T * mask).T                                                                                        # Multiply the matrix by mask to make sparse
+# We Shrink the Matrix
+A_Values = count_non_sparse_values(A_matrix.T[0])
+print("A: Matrix\n", A_matrix)
+print("T Non-Sparse Values:",A_Values)
+## Now I need to Convert To Smaller Matrix
+A_matrix_small = np.zeros((A_Values,T_Matrix.shape[0]))
+print(A_matrix_small.shape)
+
+A = A_matrix[A_matrix != 0]
+print(A.reshape(A_matrix_small.shape))
