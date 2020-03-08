@@ -10,6 +10,7 @@ from util.util import *
 from scipy.fftpack import fft, dct
 import cv2
 from sklearn.feature_extraction import image
+from MOSEK.mosek import *
 #from scipy.misc import imread   # Make Sure you install the required packages like Pillow and scipy
 
 def imgRead(fileName):
@@ -96,3 +97,10 @@ alpha = np.random.random_sample(T_Matrix[1].shape)                              
 print("B Shape:", B_Matrix.shape)
 print("A Shape:", A_Matrix.shape)
 print("Alpha Shape:", alpha.shape)
+
+alpha, res = l1norm(A_Matrix,B_Matrix)
+C = np.matmul(T_Matrix,alpha)
+C = C.reshape((dimension))
+
+print(patches_original_image[0])
+print(C)
