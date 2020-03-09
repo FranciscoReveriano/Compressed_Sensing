@@ -37,12 +37,8 @@ def convert_T_to_A(mask, T_Matrix):
     return A                                                                                                            # Return A Matrix
 
 def transform_Patch(dimension,mask, patch, T_Matrix):
-    # Prepare CUDA
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-
     # Turn Patch into C Matrix
-    C = torch.tensor(patch.flatten()).to(device)
+    C = patch.flatten()
     # Get the New Sparse matrix
     new_matrix = mask * C                                                                                               # Taking Dot Product
     ## The Next Part is minimizing this matrix
@@ -59,12 +55,9 @@ def transform_Patch(dimension,mask, patch, T_Matrix):
     A_values = count_non_sparse_values(A_Matrix.T[0])
     #print("A Non-Sparse Values:", A_values)
 
-    A_Matrix = A_Matrix.detach().cpu().numpy()
-    T_Matrix2 = T_Matrix.detach().cpu().numpy()
+    # Use Mosek
     alpha, res = l1norm(A_Matrix, B_Matrix)
-    new_C = torch.matmul(T_Matrix,torch.tensor(alpha).to(device))
-    #new_C = np.matmul(T_Matrix2, alpha)
-    new_C = new_C.detach().cpu().numpy()
+    new_C = np.matmul(T_Matrix,alpha)
     new_C = new_C.reshape((dimension))
     new_C = np.around(new_C)
     return new_C

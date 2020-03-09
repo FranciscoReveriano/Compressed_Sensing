@@ -117,10 +117,6 @@ def test_first_Patch():
     print(C)
 
 def test_whole_image():
-    # Prepare CUDA
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-
     dimension = (16, 16)  # Dimension for Block
     boat = "fishing_boat.bmp"
     lena = "lena.bmp"
@@ -131,7 +127,7 @@ def test_whole_image():
     print(P,Q)
 
     # Create Transformation matrix
-    T_Matrix = torch.tensor(DCT_Matrix(dimension[0], dimension[1])).to(device)
+    T_Matrix = DCT_Matrix(dimension[0], dimension[1])
 
     # Split the Image Into Patches
     patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
@@ -141,12 +137,11 @@ def test_whole_image():
     print(patches[0])
     # Random Initilize Mask
     ## Using Random Number Generator to Create Mask to Smaple
-    mask = torch.tensor(np.random.randint(2, size=patches[0].flatten().shape)).to(device)
+    mask = np.random.randint(2, size=patches[0].flatten().shape)
 
     # Transform the Patches
     new_image = []
     for patch in tqdm(patches):
-        patch = torch.tensor(patch).to(device)
         new_patch = transform_Patch(dimension,mask, patch, T_Matrix)
         new_image.append(new_patch)
     new_image = np.asarray(new_image)
