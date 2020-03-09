@@ -7,10 +7,9 @@ import math
 import matplotlib.pyplot as plt
 from DCT.DCT_Matrix import DCT_Matrix
 from util.util import *
-from scipy.fftpack import fft, dct
-import cv2
 from sklearn.feature_extraction import image
 from MOSEK.mosek import *
+from tqdm import tqdm
 #from scipy.misc import imread   # Make Sure you install the required packages like Pillow and scipy
 
 def imgRead(fileName):
@@ -45,62 +44,137 @@ def imgRecover(imgIn, blkSize, numSample):
 
     return None
 
+def transform_Patch(dimension,mask, patch, T_Matrix):
+    # Turn Patch into C Matrix
+    C = patch.flatten()
+    # Get the New Sparse matrix
+    new_matrix = mask * C                                                                                               # Taking Dot Product
+    ## The Next Part is minimizing this matrix
+    C_values = count_non_sparse_values(new_matrix)  # Count the Values in the C Matrix that are non-sparse
 
-boat = "fishing_boat.bmp"
-lena = "lena.bmp"
+    ## Next part is creating the new sparse C matrix
+    B_Matrix = convert_C_to_B(C_values, new_matrix)
+    B_values = count_non_sparse_values(B_Matrix)
+    #print("B Non-Sparse Values:", B_values)
+    assert (B_values == B_Matrix.shape[0])
 
-# Read the Boat Images
-matrix = imgRead(boat)                                                                                                  # Read Image into Matrix
-P, Q = matrix.shape                                                                                                     # Width and Length of Matrix
-print("Original Image")
-print("X:", P, "Y:",Q)
+    # Convert the T Matrix to A
+    A_Matrix = convert_T_to_A(mask, T_Matrix)
+    A_values = count_non_sparse_values(A_Matrix.T[0])
+    #print("A Non-Sparse Values:", A_values)
 
-# Create Transformation matrix
-dimension = (4,4)                                                                                                       # Dimension for Block
-T_Matrix = DCT_Matrix(dimension[0], dimension[1])
-print("Transformation matrix:",T_Matrix.shape)
+    alpha, res = l1norm(A_Matrix, B_Matrix)
+    new_C = np.matmul(T_Matrix, alpha)
+    new_C = new_C.reshape((dimension))
+    new_C = np.around(new_C)
+    return new_C
 
-# Split the Image Into Patches
-patches_original_image = image.extract_patches_2d(matrix,dimension)                                                     # Turn into Patches the main Matrix
-print("Patch Original Shape:",patches_original_image[0].shape)
+def test_first_Patch():
+    boat = "fishing_boat.bmp"
+    lena = "lena.bmp"
 
-# Test With First Patch
-c = patches_original_image[0].flatten()
-print("First C Flatten Shape:", c.shape)                                                                                # Dimension Shape should be Dim[0] * Dim[1]
+    # Read the Boat Images
+    matrix = imgRead(boat)                                                                                                  # Read Image into Matrix
+    P, Q = matrix.shape                                                                                                     # Width and Length of Matrix
+    print("Original Image")
+    print("X:", P, "Y:",Q)
 
-# Make the Mask Matrix
-## Using Random Number Generator to Create Mask to Smaple
-mask = np.random.randint(2, size=c.shape)
-print("Mask Shape:",mask.shape)
-print("Mask Non-Sparse Values:", count_non_sparse_values(mask))
+    # Create Transformation matrix
+    dimension = (4,4)                                                                                                       # Dimension for Block
+    T_Matrix = DCT_Matrix(dimension[0], dimension[1])
+    print("Transformation matrix:",T_Matrix.shape)
 
-# Get the New Sparse matrix
-new_matrix = mask * c                                                                                                   # Taking Dot Product
-## The Next Part is minimizing this matrix
-C_values = count_non_sparse_values(new_matrix)                                                                          # Count the Values in the C Matrix that are non-sparse
-print("C Non-Sparse Values:", C_values)
-## Next part is creating the new sparse C matrix
-B_Matrix = convert_C_to_B(C_values, new_matrix)
-B_values = count_non_sparse_values(B_Matrix)
-print("B Non-Sparse Values:", B_values)
-assert(B_values == B_Matrix.shape[0])
+    # Split the Image Into Patches
+    patches_original_image = image.extract_patches_2d(matrix,dimension)                                                     # Turn into Patches the main Matrix
+    print("Patch Original Shape:",patches_original_image[0].shape)
 
-# Convert the T Matrix to A
-A_Matrix = convert_T_to_A(mask, T_Matrix)
-A_values = count_non_sparse_values(A_Matrix.T[0])
-print("A Non-Sparse Values:", A_values)
+    # Test With First Patch
+    c = patches_original_image[0].flatten()
+    print("First C Flatten Shape:", c.shape)                                                                                # Dimension Shape should be Dim[0] * Dim[1]
 
-# Need to Random Initialize Alpha
-alpha = np.random.random_sample(T_Matrix[1].shape)                                                                      # Alpha is randomly initiliazed
+    # Make the Mask Matrix
+    ## Using Random Number Generator to Create Mask to Smaple
+    mask = np.random.randint(2, size=c.shape)
+    print("Mask Shape:",mask.shape)
+    print("Mask Non-Sparse Values:", count_non_sparse_values(mask))
 
-# At this point we need to set up our optimizer
-print("B Shape:", B_Matrix.shape)
-print("A Shape:", A_Matrix.shape)
-print("Alpha Shape:", alpha.shape)
+    # Get the New Sparse matrix
+    new_matrix = mask * c                                                                                                   # Taking Dot Product
+    ## The Next Part is minimizing this matrix
+    C_values = count_non_sparse_values(new_matrix)                                                                          # Count the Values in the C Matrix that are non-sparse
+    print("C Non-Sparse Values:", C_values)
+    ## Next part is creating the new sparse C matrix
+    B_Matrix = convert_C_to_B(C_values, new_matrix)
+    B_values = count_non_sparse_values(B_Matrix)
+    print("B Non-Sparse Values:", B_values)
+    assert(B_values == B_Matrix.shape[0])
 
-alpha, res = l1norm(A_Matrix,B_Matrix)
-C = np.matmul(T_Matrix,alpha)
-C = C.reshape((dimension))
+    # Convert the T Matrix to A
+    A_Matrix = convert_T_to_A(mask, T_Matrix)
+    A_values = count_non_sparse_values(A_Matrix.T[0])
+    print("A Non-Sparse Values:", A_values)
 
-print(patches_original_image[0])
-print(C)
+    # Need to Random Initialize Alpha
+    alpha = np.random.random_sample(T_Matrix[1].shape)                                                                      # Alpha is randomly initiliazed
+
+    # At this point we need to set up our optimizer
+    print("B Shape:", B_Matrix.shape)
+    print("A Shape:", A_Matrix.shape)
+    print("Alpha Shape:", alpha.shape)
+
+    alpha, res = l1norm(A_Matrix,B_Matrix)
+    C = np.matmul(T_Matrix,alpha)
+    C = C.reshape((dimension))
+
+    print(patches_original_image[0])
+    print(C)
+
+def test_whole_image():
+    dimension = (16, 16)  # Dimension for Block
+    boat = "fishing_boat.bmp"
+    lena = "lena.bmp"
+
+    # Read the Boat Images
+    matrix = imgRead(boat)  # Read Image into Matrix
+    P, Q = matrix.shape  # Width and Length of Matrix
+    print(P,Q)
+
+    # Create Transformation matrix
+    T_Matrix = DCT_Matrix(dimension[0], dimension[1])
+
+    # Split the Image Into Patches
+    patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
+    print(patches.shape)
+    #print(type(patches))
+    #print(type(patches[0]))
+    print(patches[0])
+    # Random Initilize Mask
+    ## Using Random Number Generator to Create Mask to Smaple
+    mask = np.random.randint(2, size=patches[0].flatten().shape)
+
+    # Transform the Patches
+    new_image = []
+    for patch in tqdm(patches):
+        new_patch = transform_Patch(dimension,mask, patch, T_Matrix)
+        #print(type(patch))
+        new_image.append(new_patch)
+    new_image = np.asarray(new_image)
+    print("")
+    print(new_image[0])
+    #print(type(new_image[0]))
+    #print(type(new_image))
+    print(new_image.shape)
+    reconstructed_image = image.reconstruct_from_patches_2d(new_image,image_size=(P,Q))
+    #plt.imshow(reconstructed_image)
+    f = plt.figure()
+    ax1 = f.add_subplot(1,2,1)
+    plt.imshow(matrix)
+    ax1.set_title("Original")
+    ax2 =f.add_subplot(1,2,2)
+    plt.imshow(reconstructed_image)
+    ax2.set_title("Reconstructed")
+    plt.title("Block 16 x 16")
+    plt.savefig("Block16x16.png")
+    plt.show()
+
+test_whole_image()
