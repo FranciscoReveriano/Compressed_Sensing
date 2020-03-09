@@ -1,5 +1,6 @@
 import numpy as np
-
+import torch
+from MOSEK.mosek import *
 
 def count_non_sparse_values(matrix):
     '''Function Counts the Number of sparse values in a flatten 1 dimensional matrix'''
@@ -34,3 +35,36 @@ def convert_T_to_A(mask, T_Matrix):
     A = A_matrix[A_matrix != 0]                                                                                         # Get All the Non-Zero Values
     A = A.reshape(A_matrix_small.shape)                                                                                 # Reshape To Correct Dimensions
     return A                                                                                                            # Return A Matrix
+
+def transform_Patch(dimension,mask, patch, T_Matrix):
+    # Prepare CUDA
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+
+    # Turn Patch into C Matrix
+    C = torch.tensor(patch.flatten()).to(device)
+    # Get the New Sparse matrix
+    new_matrix = mask * C                                                                                               # Taking Dot Product
+    ## The Next Part is minimizing this matrix
+    C_values = count_non_sparse_values(new_matrix)  # Count the Values in the C Matrix that are non-sparse
+
+    ## Next part is creating the new sparse C matrix
+    B_Matrix = convert_C_to_B(C_values, new_matrix)
+    B_values = count_non_sparse_values(B_Matrix)
+    #print("B Non-Sparse Values:", B_values)
+    assert (B_values == B_Matrix.shape[0])
+
+    # Convert the T Matrix to A
+    A_Matrix = convert_T_to_A(mask, T_Matrix)
+    A_values = count_non_sparse_values(A_Matrix.T[0])
+    #print("A Non-Sparse Values:", A_values)
+
+    A_Matrix = A_Matrix.detach().cpu().numpy()
+    T_Matrix2 = T_Matrix.detach().cpu().numpy()
+    alpha, res = l1norm(A_Matrix, B_Matrix)
+    new_C = torch.matmul(T_Matrix,torch.tensor(alpha).to(device))
+    #new_C = np.matmul(T_Matrix2, alpha)
+    new_C = new_C.detach().cpu().numpy()
+    new_C = new_C.reshape((dimension))
+    new_C = np.around(new_C)
+    return new_C
