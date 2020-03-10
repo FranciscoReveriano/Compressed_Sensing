@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from MOSEK.mosek import *
 
 def count_non_sparse_values(matrix):
@@ -52,7 +51,7 @@ def transform_Patch(dimension,mask, patch, T_Matrix):
 
     # Convert the T Matrix to A
     A_Matrix = convert_T_to_A(mask, T_Matrix)
-    A_values = count_non_sparse_values(A_Matrix.T[0])
+    #A_values = count_non_sparse_values(A_Matrix.T[0])
     #print("A Non-Sparse Values:", A_values)
 
     # Use Mosek
@@ -61,3 +60,17 @@ def transform_Patch(dimension,mask, patch, T_Matrix):
     new_C = new_C.reshape((dimension))
     new_C = np.around(new_C)
     return new_C
+
+def create_mask(num_sample, size):
+    ''' Function Creates the Mask
+        Receives a Number of Samples and Proceeds to Create The mask'''
+    mask = np.zeros(size)                                                                                               # Initialize the Mask to Zero
+    value = 0
+    while value != num_sample:                                                                                          # Sample from the requested distribution
+        index = np.random.randint(size,size=1)
+        mask[index] = 1
+        value = count_non_sparse_values(mask)
+    values = count_non_sparse_values(mask)                                                                              # Count How many Non-Sparse Values there are
+    assert(values == num_sample)                                                                                        # Error Check To Make sure Values Equal the Desired Amount
+    return mask
+

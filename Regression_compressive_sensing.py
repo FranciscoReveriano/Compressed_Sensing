@@ -11,6 +11,8 @@ from util.util import *
 from sklearn.feature_extraction import image
 from MOSEK.mosek import *
 from tqdm import tqdm
+from sklearn.metrics import mean_squared_error
+from scipy.signal import medfilt2d
 
 
 def imgRead(fileName):
@@ -117,38 +119,59 @@ def test_first_Patch():
     print(C)
 
 def test_whole_image():
-    dimension = (16, 16)  # Dimension for Block
+    dimension = (8, 8)  # Dimension for Block
     boat = "fishing_boat.bmp"
     lena = "lena.bmp"
 
     # Read the Boat Images
     matrix = imgRead(boat)  # Read Image into Matrix
     P, Q = matrix.shape  # Width and Length of Matrix
-    print(P,Q)
+    #print(P,Q)
 
     # Create Transformation matrix
     T_Matrix = DCT_Matrix(dimension[0], dimension[1])
 
     # Split the Image Into Patches
     patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
-    print(patches.shape)
+    #print(patches.shape)
     #print(type(patches))
     #print(type(patches[0]))
-    print(patches[0])
+    #print(patches[0])
+
     # Random Initilize Mask
-    ## Using Random Number Generator to Create Mask to Smaple
-    mask = np.random.randint(2, size=patches[0].flatten().shape)
+    mask = create_mask(20, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
 
     # Transform the Patches
     new_image = []
+    # MSE LIST
+    MSE_List = []
     for patch in tqdm(patches):
+        # Proceed To Do Function On Each Patch
         new_patch = transform_Patch(dimension,mask, patch, T_Matrix)
+        # Apply Median Filter
+        new_patch = medfilt2d(new_patch,kernel_size=3)
+        # Append Patch To Image to Recreate Image
         new_image.append(new_patch)
+        # Calculate MSE Square
+        MSE =mean_squared_error(patch, new_patch)
+        MSE_List.append(MSE)
+
+    # Convert List to Numpy Matrix in Desired Dimensions
     new_image = np.asarray(new_image)
-    print("")
-    print(new_image[0])
-    print(new_image.shape)
+    # print("")
+    # print(new_image[0])
+    # print(new_image.shape)
+
+    # Calculate MSE In Each Image
+    MSE_List = np.asarray(MSE_List)
+    print("MSE Average:", np.average(MSE_List))
+
+    # Use SciKit To Reconstruct the Image
     reconstructed_image = image.reconstruct_from_patches_2d(new_image,image_size=(P,Q))
+    # Image MSE
+    Image_MSE = mean_squared_error(matrix, reconstructed_image)
+    print("MSE Total:", Image_MSE)
+
     #plt.imshow(reconstructed_image)
     f = plt.figure()
     ax1 = f.add_subplot(1,2,1)
@@ -157,8 +180,7 @@ def test_whole_image():
     ax2 =f.add_subplot(1,2,2)
     plt.imshow(reconstructed_image)
     ax2.set_title("Reconstructed")
-    plt.title("Block 16 x 16")
-    plt.savefig("Block16x16.png")
+    #plt.savefig("Block16x16.png")
     plt.show()
 
 test_whole_image()
