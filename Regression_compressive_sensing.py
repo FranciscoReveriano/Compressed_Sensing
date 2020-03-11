@@ -35,18 +35,6 @@ def imgShow(imgOut):
     plt.imshow(imgOut)
     plt.show()
 
-def imgRecover(imgIn, blkSize, numSample):
-    """
-    Recover the input image from a small size samples
-    :param imgIn: input image
-    :param blkSize: block size
-    :param numSample: how many samples in each block
-    :return: recovered image
-    """
-    ##### Your Implementation here
-
-    return None
-
 def test_first_Patch():
     # Prepare CUDA
     if torch.cuda.is_available():
@@ -118,28 +106,25 @@ def test_first_Patch():
     print(patches_original_image[0])
     print(C)
 
-def test_whole_image():
-    dimension = (8, 8)  # Dimension for Block
-    boat = "fishing_boat.bmp"
-    lena = "lena.bmp"
+def test_whole_image(imgIn, blkSize, numSample, filter=False):
+    # Make Sure That We are Not Trying to Sample More Points than the Size of the Mask
+    assert(numSample < blkSize*blkSize)
+
+    # Set the Desired Dimensions
+    dimension = (blkSize, blkSize)                                                                                      #(8, 8)  # Dimension for Block
 
     # Read the Boat Images
-    matrix = imgRead(boat)  # Read Image into Matrix
-    P, Q = matrix.shape  # Width and Length of Matrix
-    #print(P,Q)
+    matrix = imgRead(imgIn)                                                                                             # Read Image into Matrix
+    P, Q = matrix.shape                                                                                                 # Width and Length of Matrix
 
     # Create Transformation matrix
     T_Matrix = DCT_Matrix(dimension[0], dimension[1])
 
     # Split the Image Into Patches
     patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
-    #print(patches.shape)
-    #print(type(patches))
-    #print(type(patches[0]))
-    #print(patches[0])
 
     # Random Initilize Mask
-    mask = create_mask(20, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
+    mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
 
     # Transform the Patches
     new_image = []
@@ -149,7 +134,8 @@ def test_whole_image():
         # Proceed To Do Function On Each Patch
         new_patch = transform_Patch(dimension,mask, patch, T_Matrix)
         # Apply Median Filter
-        new_patch = medfilt2d(new_patch,kernel_size=3)
+        if filter == True:
+            new_patch = medfilt2d(new_patch,kernel_size=3)
         # Append Patch To Image to Recreate Image
         new_image.append(new_patch)
         # Calculate MSE Square
@@ -164,23 +150,89 @@ def test_whole_image():
 
     # Calculate MSE In Each Image
     MSE_List = np.asarray(MSE_List)
-    print("MSE Average:", np.average(MSE_List))
+    #print("MSE Average:", np.average(MSE_List))
 
     # Use SciKit To Reconstruct the Image
     reconstructed_image = image.reconstruct_from_patches_2d(new_image,image_size=(P,Q))
     # Image MSE
     Image_MSE = mean_squared_error(matrix, reconstructed_image)
-    print("MSE Total:", Image_MSE)
+    #print("MSE Total:", Image_MSE)
 
     #plt.imshow(reconstructed_image)
-    f = plt.figure()
-    ax1 = f.add_subplot(1,2,1)
-    plt.imshow(matrix)
-    ax1.set_title("Original")
-    ax2 =f.add_subplot(1,2,2)
-    plt.imshow(reconstructed_image)
-    ax2.set_title("Reconstructed")
+    #fig, (ax_1, ax_2) = plt.subplots(nrows=1, ncols=2,sharex=True)
+    #ax_1.set_title("Original Image")
+    #ax_1.imshow(matrix)
+    #ax_2.set_title("Reconstructed Image")
+    #ax_2.imshow(reconstructed_image)
     #plt.savefig("Block16x16.png")
-    plt.show()
+    #title = "Block Size = " + str(blkSize) + " x " + str(blkSize) + " & Mask=" + str(numSample)
+    #fig.suptitle(title)
+    #plt.show()
+    return reconstructed_image, Image_MSE
 
-test_whole_image()
+def imgRecover(imgIn, blkSize, numSample):
+    """
+    Recover the input image from a small size samples
+    :param imgIn: input image
+    :param blkSize: block size
+    :param numSample: how many samples in each block
+    :return: recovered image
+    """
+    ##### Your Implementation here
+    print("Size of Block:",blkSize)
+    print("Mask Sample:",numSample)
+    test_whole_image(imgIn, blkSize, numSample)
+    return None
+
+def main_boat_8x8():
+    boat = "/home/franciscoAML/Documents/Compressed_Sensing/fishing_boat.bmp"
+    print("Boat Information")
+    print("Block Size 8 x 8 ")
+    ###########################################################################
+    print("Mask = 10")
+    reconstructed_img10, MSE_10 = test_whole_image(boat,8,10)
+    print("Mask=10, MSE=",MSE_10)
+    ###########################################################################
+    print("Mask = 20")
+    reconstructed_img20, MSE_20 = test_whole_image(boat,8,20)
+    print("Mask=20, MSE=", MSE_20)
+    ###########################################################################
+    print("Mask = 30")
+    reconstructed_img30, MSE_30 = test_whole_image(boat,8,30)
+    print("Mask=30, MSE=", MSE_30)
+    ###########################################################################
+    print("Mask = 40")
+    reconstructed_img40, MSE_40 = test_whole_image(boat,8,40)
+    print("Mask=40, MSE=", MSE_40)
+    ###########################################################################
+    print("Mask = 50")
+    reconstructed_img50, MSE_50 = test_whole_image(boat,8,50)
+    print("Mask=50, MSE=", MSE_50)
+    ###########################################################################
+    ### Proceed to Graph#######################################################
+    print("Graphing Results")
+    fig, (ax_1, ax_2, ax_3, ax_4, ax_5, ax_6) = plt.subplots(nrows=2, ncols=6, sharex=True)
+    # Original Image
+    ax_1.set_title("Original Image")
+    ax_1.imshow(imgRead(boat))
+    # Sample = 10
+    ax_2.set_title("Sample = 10")
+    ax_2.imshow(reconstructed_img10)
+    # Sample = 20
+    ax_3.set_title("Sample = 20")
+    ax_3.imshow(reconstructed_img20)
+    # Sample = 30
+    ax_4.set_title("Sample = 30")
+    ax_4.imshow(reconstructed_img30)
+    # Sample = 40
+    ax_5.set_title("Sample = 40")
+    ax_5.imshow(reconstructed_img40)
+    # Sample 50
+    ax_6.set_title("Sample = 50")
+    ax_6.imshow(reconstructed_img50)
+    title = "Boat: (Block Size = 8 x 8) & (No Filtering)"
+    fig.suptitle(title)
+    plt.savefig("Boat8x8.png")
+    #plt.show()
+
+main_boat_8x8()
