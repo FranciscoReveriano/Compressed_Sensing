@@ -185,7 +185,7 @@ def imgRecover(imgIn, blkSize, numSample):
     return None
 
 def main_boat_8x8():
-    boat = "/home/franciscoAML/Documents/Compressed_Sensing/fishing_boat.bmp"
+    boat = "fishing_boat.bmp"
     print("Boat Information")
     print("Block Size 8 x 8 ")
     ###########################################################################
@@ -236,7 +236,7 @@ def main_boat_8x8():
     #plt.show()
 
 def main_boat_8x8_filtering():
-    boat = "/home/franciscoAML/Documents/Compressed_Sensing/fishing_boat.bmp"
+    boat = "fishing_boat.bmp"
     print("Boat Information With Filtering")
     print("Block Size 8 x 8 ")
     ###########################################################################
