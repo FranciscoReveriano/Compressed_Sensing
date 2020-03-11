@@ -235,4 +235,55 @@ def main_boat_8x8():
     plt.savefig("Boat8x8.png")
     #plt.show()
 
+def main_boat_8x8_filtering():
+    boat = "/home/franciscoAML/Documents/Compressed_Sensing/fishing_boat.bmp"
+    print("Boat Information With Filtering")
+    print("Block Size 8 x 8 ")
+    ###########################################################################
+    print("Mask = 10")
+    reconstructed_img10, MSE_10 = test_whole_image(boat,8,10,filter=True)
+    print("Mask=10, MSE=",MSE_10)
+    ###########################################################################
+    print("Mask = 20")
+    reconstructed_img20, MSE_20 = test_whole_image(boat,8,20, filter=True)
+    print("Mask=20, MSE=", MSE_20)
+    ###########################################################################
+    print("Mask = 30")
+    reconstructed_img30, MSE_30 = test_whole_image(boat,8,30, filter=True)
+    print("Mask=30, MSE=", MSE_30)
+    ###########################################################################
+    print("Mask = 40")
+    reconstructed_img40, MSE_40 = test_whole_image(boat,8,40, filter=True)
+    print("Mask=40, MSE=", MSE_40)
+    ###########################################################################
+    print("Mask = 50")
+    reconstructed_img50, MSE_50 = test_whole_image(boat,8,50, filter=True)
+    print("Mask=50, MSE=", MSE_50)
+    ###########################################################################
+    ### Proceed to Graph#######################################################
+    print("Graphing Results")
+    fig, (ax_1, ax_2, ax_3, ax_4, ax_5, ax_6) = plt.subplots(nrows=2, ncols=6, sharex=True)
+    # Original Image
+    ax_1.set_title("Original Image")
+    ax_1.imshow(imgRead(boat))
+    # Sample = 10
+    ax_2.set_title("Sample = 10")
+    ax_2.imshow(reconstructed_img10)
+    # Sample = 20
+    ax_3.set_title("Sample = 20")
+    ax_3.imshow(reconstructed_img20)
+    # Sample = 30
+    ax_4.set_title("Sample = 30")
+    ax_4.imshow(reconstructed_img30)
+    # Sample = 40
+    ax_5.set_title("Sample = 40")
+    ax_5.imshow(reconstructed_img40)
+    # Sample 50
+    ax_6.set_title("Sample = 50")
+    ax_6.imshow(reconstructed_img50)
+    title = "Boat: (Block Size = 8 x 8) & (Median Filtering)"
+    fig.suptitle(title)
+    plt.savefig("Boat8x8.png")
+    #plt.show()
+
 main_boat_8x8()
