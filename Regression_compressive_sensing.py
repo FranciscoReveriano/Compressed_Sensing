@@ -211,7 +211,7 @@ def main_boat_8x8():
     ###########################################################################
     ### Proceed to Graph#######################################################
     print("Graphing Results")
-    fig, ((ax_1, ax_2, ax_3), (ax_4, ax_5, ax_6)) = plt.subplots(nrows=2, ncols=6, sharex=True)
+    fig, ((ax_1, ax_2, ax_3), (ax_4, ax_5, ax_6)) = plt.subplots(nrows=2, ncols=3, sharex=True)
     # Original Image
     ax_1.set_title("Original Image")
     ax_1.imshow(imgRead(boat))
@@ -262,7 +262,7 @@ def main_boat_8x8_filtering():
     ###########################################################################
     ### Proceed to Graph#######################################################
     print("Graphing Results")
-    fig, ((ax_1, ax_2, ax_3), (ax_4, ax_5, ax_6)) = plt.subplots(nrows=2, ncols=6, sharex=True)
+    fig, ((ax_1, ax_2, ax_3), (ax_4, ax_5, ax_6)) = plt.subplots(nrows=2, ncols=3, sharex=True)
     # Original Image
     ax_1.set_title("Original Image")
     ax_1.imshow(imgRead(boat))
