@@ -15,7 +15,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import KFold
 from scipy.signal import medfilt2d
-
+from statistics import mean
 
 def imgRead(fileName):
     """
@@ -124,7 +124,7 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
     T_Matrix = DCT_Matrix(dimension[0], dimension[1])
 
     # Split the Image Into Patches
-    patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
+    patches = image.extract_patches_2d(matrix, dimension)[:200]  # Turn into Patches the main Matrix
 
     # Random Initilize Mask
     mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
@@ -136,31 +136,40 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
 
         # Beging Optimal Testing
         print("Conducting K-Fold Testing to Find Optimal Lambda")
-        kf = KFold(n_splits=2, shuffle=True)                                                                             # Declare K-Fold
+        kf = KFold(n_splits=6, shuffle=True)                                                                             # Declare K-Fold
         for train_index, test_index in kf.split(patches):
             print("Running a New Fold")
             X_train, X_test = patches[train_index], patches[test_index]
+            ################################ Training Fold #############################################################
             # Lambda Error
             lambda_error_list = []
             # Now We Have The Index of the Models We Need To train
-            for lambda2 in tqdm(lambdas, desc='Lamdas'):
+            for lambda2 in tqdm(lambdas):
                 MSE_LIST = []
-                for patch in tqdm(X_train, desc='Training', position=0):                                                                             # Go Through the Training Portion for Lambda
+                for patch in X_train:                                                                                   # Go Through the Training Portion for Lambda
                     local_mse_list = []                                                                                 ## Local MSE List to Calculate the 20 Lambda Exam
                     for n in range(20):                                                                                 # Run Through Each Loop 20 Times
                         new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=lambda2)          # Optimize Patch
                         MSE = mean_squared_error(patch, new_patch)                                                      # Calculate MSE
                         local_mse_list.append(MSE)                                                                      # Append to Local MSE LIST
-                    local_mse_list = np.asarray(local_mse_list)                                                         # Convert to Numpy Array to Find Mean
-                    MSE = np.average(local_mse_list)
-                    MSE_LIST.append(MSE)
+                    MSE_LIST.append(mean(local_mse_list))
                 # Now Convert the MSE_LIST TO NUMPY and calculate Mean
-                MSE_LIST = np.asarray(MSE_LIST)
-                mean_mse_list = np.average(MSE_LIST)
-                print("Average of Lambda:", lambda2, "is:", mean_mse_list)
+                mean_mse_list = mean(MSE_LIST)
+                #print("Average of Lambda:", lambda2, "is:", mean_mse_list)
                 lambda_error_list.append(mean_mse_list)
             print(lambdas)
             print(lambda_error_list)
+            ############################################################################################################
+            best_lambda_index = lambda_error_list.index(min(lambda_error_list))
+            best_lambda = lambdas[best_lambda_index]
+            print("Best Lambda:",best_lambda)
+            test_mse_list = []
+            for patch in X_test:
+                new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=best_lambda)  # Optimize Patch
+                MSE = mean_squared_error(patch, new_patch)  # Calculate MSE
+                test_mse_list.append(MSE)
+            mean_test_mse_list = mean(test_mse_list)
+            print("MSE of Test:", mean_test_mse_list)
 
     if Solve == True:
         # Transform the Patches
@@ -396,5 +405,5 @@ boat = "fishing_boat.bmp"
 #print("Block Size 8 x 8 ")
 ###########################################################################
 #print("Mask = 30")
-test_whole_image_KFOLD(boat,4,4,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=False)
+test_whole_image_KFOLD(boat,8,10,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=False)
 #main_boat_8x8_filtering()
