@@ -12,6 +12,8 @@ from sklearn.feature_extraction import image
 from MOSEK.mosek import *
 from tqdm import tqdm
 from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import Lasso
+from sklearn.model_selection import KFold
 from scipy.signal import medfilt2d
 
 
@@ -106,7 +108,7 @@ def test_first_Patch():
     print(patches_original_image[0])
     print(C)
 
-def test_whole_image(imgIn, blkSize, numSample, filter=False):
+def test_whole_image(imgIn, blkSize, numSample, filter=False, solver="L2", display=False,lambda1=0):
     # Make Sure That We are Not Trying to Sample More Points than the Size of the Mask
     assert(numSample < blkSize*blkSize)
 
@@ -132,7 +134,12 @@ def test_whole_image(imgIn, blkSize, numSample, filter=False):
     MSE_List = []
     for patch in tqdm(patches):
         # Proceed To Do Function On Each Patch
-        new_patch = transform_Patch(dimension,mask, patch, T_Matrix)
+        if solver == "L1":
+            new_patch = transform_Patch(dimension,mask, patch, T_Matrix,solver)
+        if solver == "L2":
+            new_patch = transform_Patch(dimension,mask,patch,T_Matrix,solver)
+        if solver == "Lasso":
+            new_patch = transform_Patch(dimension,mask,patch,T_Matrix,solver,lambda1=lambda1)
         # Apply Median Filter
         if filter == True:
             new_patch = medfilt2d(new_patch,kernel_size=3)
@@ -156,18 +163,19 @@ def test_whole_image(imgIn, blkSize, numSample, filter=False):
     reconstructed_image = image.reconstruct_from_patches_2d(new_image,image_size=(P,Q))
     # Image MSE
     Image_MSE = mean_squared_error(matrix, reconstructed_image)
-    #print("MSE Total:", Image_MSE)
+    print("MSE Total:", Image_MSE)
 
-    #plt.imshow(reconstructed_image)
-    #fig, (ax_1, ax_2) = plt.subplots(nrows=1, ncols=2,sharex=True)
-    #ax_1.set_title("Original Image")
-    #ax_1.imshow(matrix)
-    #ax_2.set_title("Reconstructed Image")
-    #ax_2.imshow(reconstructed_image)
-    #plt.savefig("Block16x16.png")
-    #title = "Block Size = " + str(blkSize) + " x " + str(blkSize) + " & Mask=" + str(numSample)
-    #fig.suptitle(title)
-    #plt.show()
+    if display == True:
+        plt.imshow(reconstructed_image)
+        fig, (ax_1, ax_2) = plt.subplots(nrows=1, ncols=2,sharex=True)
+        ax_1.set_title("Original Image")
+        ax_1.imshow(matrix)
+        ax_2.set_title("Reconstructed Image")
+        ax_2.imshow(reconstructed_image)
+        plt.savefig("Block16x16.png")
+        title = "Block Size = " + str(blkSize) + " x " + str(blkSize) + " & Mask=" + str(numSample)
+        fig.suptitle(title)
+        plt.show()
     return reconstructed_image, Image_MSE
 
 def imgRecover(imgIn, blkSize, numSample):
@@ -241,23 +249,23 @@ def main_boat_8x8_filtering():
     print("Block Size 8 x 8 ")
     ###########################################################################
     print("Mask = 10")
-    reconstructed_img10, MSE_10 = test_whole_image(boat,8,10,filter=True)
+    reconstructed_img10, MSE_10 = test_whole_image(boat,8,10,filter=True, solver="Lasso", display=False, lambda1=0.001)
     print("Mask=10, MSE=",MSE_10)
     ###########################################################################
     print("Mask = 20")
-    reconstructed_img20, MSE_20 = test_whole_image(boat,8,20, filter=True)
+    reconstructed_img20, MSE_20 = test_whole_image(boat,8,20, filter=True, solver="Lasso", display=False, lambda1=0.001)
     print("Mask=20, MSE=", MSE_20)
     ###########################################################################
     print("Mask = 30")
-    reconstructed_img30, MSE_30 = test_whole_image(boat,8,30, filter=True)
+    reconstructed_img30, MSE_30 = test_whole_image(boat,8,30, filter=True, solver="Lasso", display=False, lambda1=0.001)
     print("Mask=30, MSE=", MSE_30)
     ###########################################################################
     print("Mask = 40")
-    reconstructed_img40, MSE_40 = test_whole_image(boat,8,40, filter=True)
+    reconstructed_img40, MSE_40 = test_whole_image(boat,8,40, filter=True, solver="Lasso", display=False, lambda1=0.001)
     print("Mask=40, MSE=", MSE_40)
     ###########################################################################
     print("Mask = 50")
-    reconstructed_img50, MSE_50 = test_whole_image(boat,8,50, filter=True)
+    reconstructed_img50, MSE_50 = test_whole_image(boat,8,50, filter=True, solver="Lasso", display=False, lambda1=0.001)
     print("Mask=50, MSE=", MSE_50)
     ###########################################################################
     ### Proceed to Graph#######################################################
@@ -286,5 +294,11 @@ def main_boat_8x8_filtering():
     plt.savefig("Boat8x8_Filtering.png")
     #plt.show()
 
-main_boat_8x8()
+
+#boat = "fishing_boat.bmp"
+#print("Boat Information With Filtering")
+#print("Block Size 8 x 8 ")
+###########################################################################
+#print("Mask = 30")
+#test_whole_image(boat,8,4,filter=True,solver="Lasso", display=True, lambda1 =0.001)
 main_boat_8x8_filtering()

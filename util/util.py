@@ -35,7 +35,7 @@ def convert_T_to_A(mask, T_Matrix):
     A = A.reshape(A_matrix_small.shape)                                                                                 # Reshape To Correct Dimensions
     return A                                                                                                            # Return A Matrix
 
-def transform_Patch(dimension,mask, patch, T_Matrix):
+def transform_Patch(dimension,mask, patch, T_Matrix,solver="L2",lambda1=0):
     # Turn Patch into C Matrix
     C = patch.flatten()
     # Get the New Sparse matrix
@@ -55,11 +55,42 @@ def transform_Patch(dimension,mask, patch, T_Matrix):
     #print("A Non-Sparse Values:", A_values)
 
     # Use Mosek
-    alpha, res = l1norm(A_Matrix, B_Matrix)
+    if solver == "L1":
+        alpha, res = l1norm(A_Matrix, B_Matrix)
+    if solver == "L2":
+        alpha, res = l2norm(A_Matrix,B_Matrix)
+    if solver == "Lasso":
+        M = lseReg(A_Matrix,B_Matrix, lambda1,0)
+        M.solve()
+        alpha = M.getVariable("w").level()
+
     new_C = np.matmul(T_Matrix,alpha)
     new_C = new_C.reshape((dimension))
     new_C = np.around(new_C)
     return new_C
+
+def transform_Patch2(dimension,mask, patch, T_Matrix):
+    # Turn Patch into C Matrix
+    C = patch.flatten()
+    # Get the New Sparse matrix
+    new_matrix = mask * C                                                                                               # Taking Dot Product
+    ## The Next Part is minimizing this matrix
+    C_values = count_non_sparse_values(new_matrix)  # Count the Values in the C Matrix that are non-sparse
+
+    ## Next part is creating the new sparse C matrix
+    B_Matrix = convert_C_to_B(C_values, new_matrix)
+    B_values = count_non_sparse_values(B_Matrix)
+    #print("B Non-Sparse Values:", B_values)
+    assert (B_values == B_Matrix.shape[0])
+
+    # Convert the T Matrix to A
+    A_Matrix = convert_T_to_A(mask, T_Matrix)
+    A_values = count_non_sparse_values(A_Matrix.T[0])
+    #print("A Non-Sparse Values:", A_values)
+    #print(A_Matrix.shape)
+    return A_Matrix, B_Matrix
+
+
 
 def create_mask(num_sample, size):
     ''' Function Creates the Mask
