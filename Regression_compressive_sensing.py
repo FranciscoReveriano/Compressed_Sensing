@@ -108,7 +108,8 @@ def test_first_Patch():
     print(patches_original_image[0])
     print(C)
 
-def test_whole_image(imgIn, blkSize, numSample, filter=False, solver="L2", display=False,lambda1=0):
+
+def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2", display=False,lambda1=0, K_FOLD=True, Solve=True):
     # Make Sure That We are Not Trying to Sample More Points than the Size of the Mask
     assert(numSample < blkSize*blkSize)
 
@@ -128,6 +129,104 @@ def test_whole_image(imgIn, blkSize, numSample, filter=False, solver="L2", displ
     # Random Initilize Mask
     mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
 
+    # Conduct K-Folds to find best alpha value
+    if K_FOLD == True and solver=="Lasso":
+        # Declare Lambda Range
+        lambdas = [10 ** (-i) for i in range(1, 6)]
+
+        # Beging Optimal Testing
+        print("Conducting K-Fold Testing to Find Optimal Lambda")
+        kf = KFold(n_splits=2, shuffle=True)                                                                             # Declare K-Fold
+        for train_index, test_index in kf.split(patches):
+            print("Running a New Fold")
+            X_train, X_test = patches[train_index], patches[test_index]
+            # Lambda Error
+            lambda_error_list = []
+            # Now We Have The Index of the Models We Need To train
+            for lambda2 in tqdm(lambdas, desc='Lamdas'):
+                MSE_LIST = []
+                for patch in tqdm(X_train, desc='Training', position=0):                                                                             # Go Through the Training Portion for Lambda
+                    local_mse_list = []                                                                                 ## Local MSE List to Calculate the 20 Lambda Exam
+                    for n in range(20):                                                                                 # Run Through Each Loop 20 Times
+                        new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=lambda2)          # Optimize Patch
+                        MSE = mean_squared_error(patch, new_patch)                                                      # Calculate MSE
+                        local_mse_list.append(MSE)                                                                      # Append to Local MSE LIST
+                    local_mse_list = np.asarray(local_mse_list)                                                         # Convert to Numpy Array to Find Mean
+                    MSE = np.average(local_mse_list)
+                    MSE_LIST.append(MSE)
+                # Now Convert the MSE_LIST TO NUMPY and calculate Mean
+                MSE_LIST = np.asarray(MSE_LIST)
+                mean_mse_list = np.average(MSE_LIST)
+                print("Average of Lambda:", lambda2, "is:", mean_mse_list)
+                lambda_error_list.append(mean_mse_list)
+            print(lambdas)
+            print(lambda_error_list)
+
+    if Solve == True:
+        # Transform the Patches
+        new_image = []
+        # MSE LIST
+        MSE_List = []
+        for patch in tqdm(patches):
+            # Proceed To Do Function On Each Patch
+            if solver == "L1":
+                new_patch = transform_Patch(dimension,mask, patch, T_Matrix,solver)
+            if solver == "L2":
+                new_patch = transform_Patch(dimension,mask,patch,T_Matrix,solver)
+            if solver == "Lasso":
+                new_patch = transform_Patch(dimension,mask,patch,T_Matrix,solver,lambda1=lambda1)
+            # Apply Median Filter
+            if filter == True:
+                new_patch = medfilt2d(new_patch,kernel_size=3)
+            # Append Patch To Image to Recreate Image
+            new_image.append(new_patch)
+            # Calculate MSE Square
+            MSE =mean_squared_error(patch, new_patch)
+            MSE_List.append(MSE)
+        # Convert List to Numpy Matrix in Desired Dimensions
+        new_image = np.asarray(new_image)
+        # print("")
+        # print(new_image[0])
+        # print(new_image.shape)
+
+        # Calculate MSE In Each Image
+        MSE_List = np.asarray(MSE_List)
+        #print("MSE Average:", np.average(MSE_List))
+
+        # Use SciKit To Reconstruct the Image
+        reconstructed_image = image.reconstruct_from_patches_2d(new_image,image_size=(P,Q))
+        # Image MSE
+        Image_MSE = mean_squared_error(matrix, reconstructed_image)
+
+        if display == True:
+            print("MSE Total:", Image_MSE)
+            plt.imshow(reconstructed_image)
+            fig, (ax_1, ax_2) = plt.subplots(nrows=1, ncols=2,sharex=True)
+            ax_1.set_title("Original Image")
+            ax_1.imshow(matrix)
+            ax_2.set_title("Reconstructed Image")
+            ax_2.imshow(reconstructed_image)
+            plt.savefig("Block16x16.png")
+            title = "Block Size = " + str(blkSize) + " x " + str(blkSize) + " & Mask=" + str(numSample)
+            fig.suptitle(title)
+            plt.show()
+        return reconstructed_image, Image_MSE
+
+
+def test_whole_image(imgIn, blkSize, numSample, filter=False, solver="L2", display=False,lambda1=0):
+    # Make Sure That We are Not Trying to Sample More Points than the Size of the Mask
+    assert(numSample < blkSize*blkSize)
+    # Set the Desired Dimensions
+    dimension = (blkSize, blkSize)                                                                                      #(8, 8)  # Dimension for Block
+    # Read the Boat Images
+    matrix = imgRead(imgIn)                                                                                             # Read Image into Matrix
+    P, Q = matrix.shape                                                                                                 # Width and Length of Matrix
+    # Create Transformation matrix
+    T_Matrix = DCT_Matrix(dimension[0], dimension[1])
+    # Split the Image Into Patches
+    patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
+    # Random Initilize Mask
+    mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
     # Transform the Patches
     new_image = []
     # MSE LIST
@@ -148,23 +247,19 @@ def test_whole_image(imgIn, blkSize, numSample, filter=False, solver="L2", displ
         # Calculate MSE Square
         MSE =mean_squared_error(patch, new_patch)
         MSE_List.append(MSE)
-
     # Convert List to Numpy Matrix in Desired Dimensions
     new_image = np.asarray(new_image)
     # print("")
     # print(new_image[0])
     # print(new_image.shape)
-
     # Calculate MSE In Each Image
     MSE_List = np.asarray(MSE_List)
     #print("MSE Average:", np.average(MSE_List))
-
     # Use SciKit To Reconstruct the Image
     reconstructed_image = image.reconstruct_from_patches_2d(new_image,image_size=(P,Q))
     # Image MSE
     Image_MSE = mean_squared_error(matrix, reconstructed_image)
     print("MSE Total:", Image_MSE)
-
     if display == True:
         plt.imshow(reconstructed_image)
         fig, (ax_1, ax_2) = plt.subplots(nrows=1, ncols=2,sharex=True)
@@ -191,6 +286,7 @@ def imgRecover(imgIn, blkSize, numSample):
     print("Mask Sample:",numSample)
     test_whole_image(imgIn, blkSize, numSample)
     return None
+
 
 def main_boat_8x8():
     boat = "fishing_boat.bmp"
@@ -295,10 +391,10 @@ def main_boat_8x8_filtering():
     #plt.show()
 
 
-#boat = "fishing_boat.bmp"
+boat = "fishing_boat.bmp"
 #print("Boat Information With Filtering")
 #print("Block Size 8 x 8 ")
 ###########################################################################
 #print("Mask = 30")
-#test_whole_image(boat,8,4,filter=True,solver="Lasso", display=True, lambda1 =0.001)
-main_boat_8x8_filtering()
+test_whole_image_KFOLD(boat,4,4,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=False)
+#main_boat_8x8_filtering()
