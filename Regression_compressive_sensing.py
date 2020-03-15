@@ -1,3 +1,4 @@
+
 # This is for ECE580: Intro to machine learning Spring 2020 in Duke
 # This is translated to Python from show_chanWeights.m file provided by Prof. Li by 580 TAs
 
@@ -109,7 +110,7 @@ def test_first_Patch():
     print(C)
 
 
-def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2", display=False,lambda1=0, K_FOLD=True, Solve=True):
+def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2", display=False, lambda1=0, K_FOLD=True, Solve=True, fileName="Results.txt",sampleSize=1000):
     # Make Sure That We are Not Trying to Sample More Points than the Size of the Mask
     assert(numSample < blkSize*blkSize)
 
@@ -124,54 +125,80 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
     T_Matrix = DCT_Matrix(dimension[0], dimension[1])
 
     # Split the Image Into Patches
-    patches = image.extract_patches_2d(matrix, dimension)[:200]  # Turn into Patches the main Matrix
-
+    patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
     # Random Initilize Mask
     mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
 
     # Conduct K-Folds to find best alpha value
+    txtFile = fileName + ".txt"
     if K_FOLD == True and solver=="Lasso":
+        ############################# Declare Training Patch ###########################################################
+        training_patches = []
+        for i in range(sampleSize):
+            j = np.random.randint(len(patches))
+            training_patches.append(patches[j])
+        training_patches = np.asarray(training_patches)
+        ################################################################################################################
         # Declare Lambda Range
         lambdas = [10 ** (-i) for i in range(1, 6)]
-
         # Beging Optimal Testing
         print("Conducting K-Fold Testing to Find Optimal Lambda")
-        kf = KFold(n_splits=6, shuffle=True)                                                                             # Declare K-Fold
-        for train_index, test_index in kf.split(patches):
-            print("Running a New Fold")
-            X_train, X_test = patches[train_index], patches[test_index]
-            ################################ Training Fold #############################################################
-            # Lambda Error
-            lambda_error_list = []
-            # Now We Have The Index of the Models We Need To train
-            for lambda2 in tqdm(lambdas):
-                MSE_LIST = []
-                for patch in X_train:                                                                                   # Go Through the Training Portion for Lambda
-                    local_mse_list = []                                                                                 ## Local MSE List to Calculate the 20 Lambda Exam
-                    for n in range(20):                                                                                 # Run Through Each Loop 20 Times
-                        new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=lambda2)          # Optimize Patch
-                        MSE = mean_squared_error(patch, new_patch)                                                      # Calculate MSE
-                        local_mse_list.append(MSE)                                                                      # Append to Local MSE LIST
-                    MSE_LIST.append(mean(local_mse_list))
-                # Now Convert the MSE_LIST TO NUMPY and calculate Mean
-                mean_mse_list = mean(MSE_LIST)
-                #print("Average of Lambda:", lambda2, "is:", mean_mse_list)
-                lambda_error_list.append(mean_mse_list)
-            print(lambdas)
-            print(lambda_error_list)
-            ############################################################################################################
-            best_lambda_index = lambda_error_list.index(min(lambda_error_list))
-            best_lambda = lambdas[best_lambda_index]
-            print("Best Lambda:",best_lambda)
-            test_mse_list = []
-            for patch in X_test:
-                new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=best_lambda)  # Optimize Patch
-                MSE = mean_squared_error(patch, new_patch)  # Calculate MSE
-                test_mse_list.append(MSE)
-            mean_test_mse_list = mean(test_mse_list)
-            print("MSE of Test:", mean_test_mse_list)
+        kf = KFold(n_splits=6, shuffle=True)                                                                            # Declare K-Fold
+        lambda_list = []                                                                                                # Lambda List
+        lambdas_list = []                                                                                               # Lambdas
+        index_i = 0
+        ################################## Conduct K-Folds #############################################################
+        for i in tqdm(range(20)):
+            print("##################### Running Trial", index_i, "######################")  # Print Fold Number
+            index_i += 1
+            for train_index, test_index in kf.split(training_patches):
+                X_train, X_test = training_patches[train_index], training_patches[test_index]
+                ################################ Training Fold #############################################################
+                # Lambda Error
+                lambda_error_list = []
+                # Now We Have The Index of the Models We Need To train
+                for lambda2 in tqdm(lambdas,desc="Lambda",position=0):
+                    MSE_LIST = []
+                    for patch in tqdm(X_train,desc="Training",position=1):                                                                                   # Go Through the Training Portion for Lambda
+                        local_mse_list = []                                                                                 ## Local MSE List to Calculate the 20 Lambda Exam
+                        for n in range(1):                                                                                 # Run Through Each Loop 20 Times
+                            new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=lambda2)          # Optimize Patch
+                            MSE = mean_squared_error(patch, new_patch)                                                      # Calculate MSE
+                            local_mse_list.append(MSE)                                                                      # Append to Local MSE LIST
+                        MSE_LIST.append(mean(local_mse_list))
+                    # Now Convert the MSE_LIST TO NUMPY and calculate Mean
+                    mean_mse_list = mean(MSE_LIST)
+                    #print("Average of Lambda:", lambda2, "is:", mean_mse_list)
+                    lambda_error_list.append(mean_mse_list)
+                #print(lambdas)
+                #print(lambda_error_list)
+                ############################################################################################################
+                best_lambda_index = lambda_error_list.index(min(lambda_error_list))
+                best_lambda = lambdas[best_lambda_index]
+                #print("Best Lambda:",best_lambda)
+                test_mse_list = []
+                for patch in tqdm(X_test, desc="Testing", position=1):
+                    new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=best_lambda)  # Optimize Patch
+                    MSE = mean_squared_error(patch, new_patch)  # Calculate MSE
+                    test_mse_list.append(MSE)
+                mean_test_mse_list = mean(test_mse_list)
+                #print("MSE of Test:", mean_test_mse_list)
+                lambdas_list.append(best_lambda)
+                lambda_list.append(mean_test_mse_list)
+            # Find the Best Overall Lambda
+        min_final_mse = min(lambda_list)
+        print("Minimum MSE:",min_final_mse)
+        final_lambda_index = lambda_list.index(min_final_mse)
+        final_lambda = lambdas_list[final_lambda_index]
+        print("Best Lambda:",final_lambda)
+        print_line = str(final_lambda) + " " + str(min_final_mse) + "\n"
+        # Append Final Results to File
+        with open(fileName, 'a') as f:
+            f.write(print_line)
 
     if Solve == True:
+        print('############################ Solving Final Image Using best Lambda########################################')
+        patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
         # Transform the Patches
         new_image = []
         # MSE LIST
@@ -183,7 +210,7 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
             if solver == "L2":
                 new_patch = transform_Patch(dimension,mask,patch,T_Matrix,solver)
             if solver == "Lasso":
-                new_patch = transform_Patch(dimension,mask,patch,T_Matrix,solver,lambda1=lambda1)
+                new_patch = transform_Patch(dimension,mask,patch,T_Matrix,solver,lambda1=final_lambda)
             # Apply Median Filter
             if filter == True:
                 new_patch = medfilt2d(new_patch,kernel_size=3)
@@ -208,7 +235,9 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
         Image_MSE = mean_squared_error(matrix, reconstructed_image)
 
         if display == True:
-            print("MSE Total:", Image_MSE)
+            with open(fileName, 'a') as f:
+                linePrint = "MSE Total With Original: " + str(Image_MSE) + "\n"
+                f.write(linePrint)
             plt.imshow(reconstructed_image)
             fig, (ax_1, ax_2) = plt.subplots(nrows=1, ncols=2,sharex=True)
             ax_1.set_title("Original Image")
@@ -216,9 +245,10 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
             ax_2.set_title("Reconstructed Image")
             ax_2.imshow(reconstructed_image)
             plt.savefig("Block16x16.png")
-            title = "Block Size = " + str(blkSize) + " x " + str(blkSize) + " & Mask=" + str(numSample)
+            title = "Block Size = " + str(blkSize) + " x " + str(blkSize) + " & Mask=" + str(numSample) + " Lambda:" + str(final_lambda)
             fig.suptitle(title)
-            plt.show()
+            plotName = fileName + "png"
+            plt.savefig(plotName)
         return reconstructed_image, Image_MSE
 
 
@@ -401,9 +431,19 @@ def main_boat_8x8_filtering():
 
 
 boat = "fishing_boat.bmp"
-#print("Boat Information With Filtering")
-#print("Block Size 8 x 8 ")
-###########################################################################
-#print("Mask = 30")
-test_whole_image_KFOLD(boat,8,10,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=False)
-#main_boat_8x8_filtering()
+# Test 8x8 with Sample 10
+filename = "Text8x8Sample10"
+test_whole_image_KFOLD(boat,8,10,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename, sampleSize=100)
+# Test 8x8 with Sample 20
+#filename = "Text8x8Sample20"
+#test_whole_image_KFOLD(boat,8,20,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename)
+# Test 8x8 with Sample 30
+#filename = "Text8x8Sample30"
+#test_whole_image_KFOLD(boat,8,30,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename)
+# Test 8x8 with Sample 40
+#filename = "Text8x8Sample40"
+#test_whole_image_KFOLD(boat,8,40,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename)
+# Test 8x8 with Sample 50
+#filename = "Text8x8Sample50"
+#test_whole_image_KFOLD(boat,8,50,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename)
+
