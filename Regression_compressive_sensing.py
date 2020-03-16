@@ -110,7 +110,7 @@ def test_first_Patch():
     print(C)
 
 
-def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2", display=False, lambda1=0, K_FOLD=True, Solve=True, fileName="Results.txt",sampleSize=1000):
+def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2", display=False, lambda1=0, K_FOLD=True, Solve=True, fileName="Results.txt",sampleSize=100):
     # Make Sure That We are Not Trying to Sample More Points than the Size of the Mask
     assert(numSample < blkSize*blkSize)
 
@@ -118,17 +118,17 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
     dimension = (blkSize, blkSize)                                                                                      #(8, 8)  # Dimension for Block
 
     # Read the Boat Images
-    matrix = imgRead(imgIn)                                                                                             # Read Image into Matrix
-    P, Q = matrix.shape                                                                                                 # Width and Length of Matrix
+    matrix = imgRead(imgIn)[:,:,0]                                                                                            # Read Image into Matrix
+    P, Q = matrix.shape[0], matrix.shape[1]                                                                             # Width and Length of Matrix
 
     # Create Transformation matrix
     T_Matrix = DCT_Matrix(dimension[0], dimension[1])
 
     # Split the Image Into Patches
     patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
+
     # Random Initilize Mask
     mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
-
     # Conduct K-Folds to find best alpha value
     txtFile = fileName + ".txt"
     if K_FOLD == True and solver=="Lasso":
@@ -138,33 +138,36 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
             j = np.random.randint(len(patches))
             training_patches.append(patches[j])
         training_patches = np.asarray(training_patches)
-        ################################################################################################################
+        ############################ Lambda List #######################################################################
         # Declare Lambda Range
         lambdas = [10 ** (-i) for i in range(1, 6)]
-        # Beging Optimal Testing
-        print("Conducting K-Fold Testing to Find Optimal Lambda")
+        # Begin Optimal Testing
+        #print("Conducting K-Fold Testing to Find Optimal Lambda")
         kf = KFold(n_splits=6, shuffle=True)                                                                            # Declare K-Fold
         lambda_list = []                                                                                                # Lambda List
         lambdas_list = []                                                                                               # Lambdas
-        index_i = 0
+        index_i = 1                                                                                                     # Index
         ################################## Conduct K-Folds #############################################################
-        for i in tqdm(range(20)):
+        for i in tqdm(range(20), desc="Run", position=0):
             print("##################### Running Trial", index_i, "######################")  # Print Fold Number
             index_i += 1
             for train_index, test_index in kf.split(training_patches):
+
                 X_train, X_test = training_patches[train_index], training_patches[test_index]
                 ################################ Training Fold #############################################################
                 # Lambda Error
                 lambda_error_list = []
                 # Now We Have The Index of the Models We Need To train
                 for lambda2 in tqdm(lambdas,desc="Lambda",position=0):
+                    # Random Initilize Mask
+                    mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
                     MSE_LIST = []
-                    for patch in tqdm(X_train,desc="Training",position=1):                                                                                   # Go Through the Training Portion for Lambda
-                        local_mse_list = []                                                                                 ## Local MSE List to Calculate the 20 Lambda Exam
-                        for n in range(1):                                                                                 # Run Through Each Loop 20 Times
-                            new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=lambda2)          # Optimize Patch
-                            MSE = mean_squared_error(patch, new_patch)                                                      # Calculate MSE
-                            local_mse_list.append(MSE)                                                                      # Append to Local MSE LIST
+                    for patch in tqdm(X_train,desc="Training",position=1):                                              # Go Through the Training Portion for Lambda
+                        local_mse_list = []                                                                             ## Local MSE List to Calculate the 20 Lambda Exam
+                        for n in range(1):                                                                              # Run Through Each Loop 20 Times
+                            new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=lambda2)      # Optimize Patch
+                            MSE = mean_squared_error(patch, new_patch)                                                  # Calculate MSE
+                            local_mse_list.append(MSE)                                                                  # Append to Local MSE LIST
                         MSE_LIST.append(mean(local_mse_list))
                     # Now Convert the MSE_LIST TO NUMPY and calculate Mean
                     mean_mse_list = mean(MSE_LIST)
@@ -178,7 +181,7 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
                 #print("Best Lambda:",best_lambda)
                 test_mse_list = []
                 for patch in tqdm(X_test, desc="Testing", position=1):
-                    new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=best_lambda)  # Optimize Patch
+                    new_patch = transform_Patch(dimension, mask, patch, T_Matrix, solver, lambda1=best_lambda)          # Optimize Patch
                     MSE = mean_squared_error(patch, new_patch)  # Calculate MSE
                     test_mse_list.append(MSE)
                 mean_test_mse_list = mean(test_mse_list)
@@ -198,6 +201,8 @@ def test_whole_image_KFOLD(imgIn, blkSize, numSample, filter=False, solver="L2",
 
     if Solve == True:
         print('############################ Solving Final Image Using best Lambda########################################')
+        # Random Initilize Mask
+        mask = create_mask(numSample, dimension[0] * dimension[1])  # New Mask is Made in Each Iteration
         patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
         # Transform the Patches
         new_image = []
@@ -430,10 +435,68 @@ def main_boat_8x8_filtering():
     #plt.show()
 
 
-boat = "fishing_boat.bmp"
+def main_lena_16x16_filtering():
+    boat = "fishing_boat.bmp"
+    lena = "lena.bmp"
+    print("Lena Information With Filtering")
+    print("Block Size 16 x 16 ")
+    ###########################################################################
+    print("Mask = 10")
+    title = "Lena_Mask_10.out"
+    reconstructed_img10, MSE_10 = test_whole_image(lena,16,10,filter=True, solver="Lasso", display=False, lambda1=0.00001)
+    np.savetxt(title, reconstructed_img10, delimiter=',')
+    print("Mask=10, MSE=",MSE_10)
+    ###########################################################################
+    #print("Mask = 20")
+    #reconstructed_img20, MSE_20 = test_whole_image(boat,8,20, filter=True, solver="Lasso", display=False, lambda1=0.001)
+    #print("Mask=20, MSE=", MSE_20)
+    ###########################################################################
+    #print("Mask = 30")
+    #reconstructed_img30, MSE_30 = test_whole_image(boat,8,30, filter=True, solver="Lasso", display=False, lambda1=0.001)
+    #print("Mask=30, MSE=", MSE_30)
+    ###########################################################################
+    #print("Mask = 40")
+    #reconstructed_img40, MSE_40 = test_whole_image(boat,8,40, filter=True, solver="Lasso", display=False, lambda1=0.001)
+    #print("Mask=40, MSE=", MSE_40)
+    ###########################################################################
+    #print("Mask = 50")
+    #reconstructed_img50, MSE_50 = test_whole_image(boat,8,50, filter=True, solver="Lasso", display=False, lambda1=0.001)
+    #print("Mask=50, MSE=", MSE_50)
+    ###########################################################################
+    ### Proceed to Graph#######################################################
+    #print("Graphing Results")
+    #fig, ((ax_1, ax_2, ax_3), (ax_4, ax_5, ax_6)) = plt.subplots(nrows=2, ncols=3, sharex=True)
+    # Original Image
+    #ax_1.set_title("Original Image")
+    #ax_1.imshow(imgRead(boat))
+    # Sample = 10
+    #ax_2.set_title("Sample = 10")
+    #ax_2.imshow(reconstructed_img10)
+    # Sample = 20
+    #ax_3.set_title("Sample = 20")
+    #ax_3.imshow(reconstructed_img20)
+    # Sample = 30
+    #ax_4.set_title("Sample = 30")
+    #ax_4.imshow(reconstructed_img30)
+    # Sample = 40
+    #ax_5.set_title("Sample = 40")
+    #ax_5.imshow(reconstructed_img40)
+    # Sample 50
+    #ax_6.set_title("Sample = 50")
+    #ax_6.imshow(reconstructed_img50)
+    #title = "Boat: (Block Size = 8 x 8) & (Median Filtering)"
+    #fig.suptitle(title)
+    #plt.savefig("Boat8x8_Filtering.png")
+    #plt.show()
+
+
+
+
+
+main_lena_16x16_filtering()
 # Test 8x8 with Sample 10
-filename = "Text8x8Sample10"
-test_whole_image_KFOLD(boat,8,10,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename, sampleSize=100)
+#filename = "Lena_8x8Sample10"
+#test_whole_image_KFOLD(boat,16,10,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename, sampleSize=100)
 # Test 8x8 with Sample 20
 #filename = "Text8x8Sample20"
 #test_whole_image_KFOLD(boat,8,20,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename)
