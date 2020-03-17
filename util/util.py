@@ -60,9 +60,17 @@ def transform_Patch(dimension,mask, patch, T_Matrix,solver="L2",lambda1=0):
     if solver == "L2":
         alpha, res = l2norm(A_Matrix,B_Matrix)
     if solver == "Lasso":
-        M = lseReg(A_Matrix,B_Matrix, lambda1,0)
-        M.solve()
-        alpha = M.getVariable("w").level()
+        with mosek.Env() as env:
+            with env.Task(0,0) as task:
+                try:
+                    M = lseReg(A_Matrix,B_Matrix, lambda1,0)
+                    M.solve()
+                    alpha = M.getVariable("w").level()
+                finally:
+                    M.dispose()
+                task.__del__()
+            env.__del__
+
 
     new_C = np.matmul(T_Matrix,alpha)
     new_C = new_C.reshape((dimension))
