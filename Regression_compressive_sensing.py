@@ -443,31 +443,31 @@ def main_lena_16x16_filtering():
     ###########################################################################
     print("Mask = 10")
     title = "Lena_Mask_10.txt"
-    reconstructed_img10, MSE_10 = test_whole_image(lena,16,10,filter=False, solver="Lasso", display=False, lambda1=0.00001)
+    reconstructed_img10, MSE_10 = test_whole_image(lena,16,10,filter=True, solver="Lasso", display=False, lambda1=0.1)
     np.savetxt(title, reconstructed_img10, delimiter=',')
     print("Mask=10, MSE=",MSE_10)
     ###########################################################################
     print("Mask = 20")
     title = "Lena_Mask_20.txt"
-    reconstructed_img20, MSE_20 = test_whole_image(lena,16,20, filter=False, solver="Lasso", display=False, lambda1=0.001)
+    reconstructed_img20, MSE_20 = test_whole_image(lena,16,20, filter=True, solver="Lasso", display=False, lambda1=0.1)
     np.savetxt(title, reconstructed_img20, delimiter=',')
     print("Mask=20, MSE=", MSE_20)
     ###########################################################################
     print("Mask = 30")
     title = "Lena_Mask_30.txt"
-    reconstructed_img30, MSE_30 = test_whole_image(lena,16,30, filter=False, solver="Lasso", display=False, lambda1=0.1)
+    reconstructed_img30, MSE_30 = test_whole_image(lena,16,30, filter=True, solver="Lasso", display=False, lambda1=0.1)
     np.savetxt(title, reconstructed_img30, delimiter=',')
     print("Mask=30, MSE=", MSE_30)
     ###########################################################################
     print("Mask = 40")
     title = "Lena_Mask_40.txt"
-    reconstructed_img40, MSE_40 = test_whole_image(lena,16,40, filter=False, solver="Lasso", display=False, lambda1=0.1)
+    reconstructed_img40, MSE_40 = test_whole_image(lena,16,40, filter=True, solver="Lasso", display=False, lambda1=0.1)
     np.savetxt(title, reconstructed_img40, delimiter=',')
     print("Mask=40, MSE=", MSE_40)
     ###########################################################################
     print("Mask = 50")
     title = "Lena_Mask_50.txt"
-    reconstructed_img50, MSE_50 = test_whole_image(lena,16,50, filter=False, solver="Lasso", display=False, lambda1=0.1)
+    reconstructed_img50, MSE_50 = test_whole_image(lena,16,50, filter=True, solver="Lasso", display=False, lambda1=0.1)
     np.savetxt(title, reconstructed_img50, delimiter=',')
     print("Mask=50, MSE=", MSE_50)
     ###########################################################################
@@ -492,9 +492,9 @@ def main_lena_16x16_filtering():
     # Sample 50
     ax_6.set_title("Sample = 50")
     ax_6.imshow(reconstructed_img50)
-    title = "Lena: (Block Size = 16 x 16) & (No Filtering) & (Optimal Lambda)"
+    title = "Lena: (Block Size = 16 x 16) & (Filtering) & (Optimal Lambda)"
     fig.suptitle(title)
-    plt.savefig("Lena_16x16_NO_Filtering.png")
+    plt.savefig("Lena_16x16_Filtering.png")
     plt.show()
 
 
