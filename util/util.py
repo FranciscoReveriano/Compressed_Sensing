@@ -68,8 +68,8 @@ def transform_Patch(dimension,mask, patch, T_Matrix,solver="L2",lambda1=0):
                     alpha = M.getVariable("w").level()
                 finally:
                     M.dispose()
-                task.__del__()
-            env.__del__
+                #task.__del__()
+            #env.__del__
 
 
     new_C = np.matmul(T_Matrix,alpha)

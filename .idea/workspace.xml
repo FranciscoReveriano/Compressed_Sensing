@@ -2,11 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="73685aa4-136d-498e-9064-1d16fc6e4d1f" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/Boat_No_FIltering/plot.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Lena_16x16_No_Filtering_2/plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Lena_Mask_10.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Lena_16x16_No_Filtering/Lena_Mask_10.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Lena_Mask_20.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Lena_16x16_No_Filtering/Lena_Mask_20.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Lena_Mask_30.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Lena_16x16_No_Filtering/Lena_Mask_30.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Compressed Sensing.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Compressed Sensing.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Regression_compressive_sensing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Regression_compressive_sensing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util/util.py" beforeDir="false" afterPath="$PROJECT_DIR$/util/util.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -27,16 +29,21 @@
   <component name="ProjectId" id="1Yfn4Eu7IIeD9TWXY4nv5P6ucZZ" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/Boat_No_FIltering" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Lena_16x16_No_Filtering_2" />
+      <recent name="$PROJECT_DIR$/Lena2" />
+      <recent name="$PROJECT_DIR$/Lena" />
       <recent name="$PROJECT_DIR$/Lena_16x16_No_Filtering" />
       <recent name="$PROJECT_DIR$/DCT" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Boat_No_FIltering" />
+      <recent name="$PROJECT_DIR$/Lena_16x16_Filtering" />
+      <recent name="$PROJECT_DIR$" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -51,7 +58,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Regression_compressive_sensing">
+  <component name="RunManager" selected="Python.plot">
     <configuration name="DCT_Matrix" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="Compressed_Sensing" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -115,6 +122,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="plot" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Compressed_Sensing" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Lena_16x16_No_Filtering_2" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Lena_16x16_No_Filtering_2/plot.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="util" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="Compressed_Sensing" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -138,6 +166,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.plot" />
         <item itemvalue="Python.Regression_compressive_sensing" />
         <item itemvalue="Python.util" />
         <item itemvalue="Python.DCT_Matrix" />

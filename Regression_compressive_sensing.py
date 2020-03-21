@@ -449,7 +449,7 @@ def main_lena_16x16_filtering():
     ###########################################################################
     print("Mask = 20")
     title = "Lena_Mask_20.txt"
-    reconstructed_img20, MSE_20 = test_whole_image(lena,16,20, filter=True, solver="Lasso", display=False, lambda1=0.1)
+    reconstructed_img20, MSE_20 = test_whole_image(lena,16,20, filter=True, solver="Lasso", display=False, lambda1=0.001)
     np.savetxt(title, reconstructed_img20, delimiter=',')
     print("Mask=20, MSE=", MSE_20)
     ###########################################################################
@@ -461,7 +461,7 @@ def main_lena_16x16_filtering():
     ###########################################################################
     print("Mask = 40")
     title = "Lena_Mask_40.txt"
-    reconstructed_img40, MSE_40 = test_whole_image(lena,16,40, filter=True, solver="Lasso", display=False, lambda1=0.1)
+    reconstructed_img40, MSE_40 = test_whole_image(lena,16,40, filter=True, solver="Lasso", display=False, lambda1=0.001)
     np.savetxt(title, reconstructed_img40, delimiter=',')
     print("Mask=40, MSE=", MSE_40)
     ###########################################################################
@@ -476,7 +476,7 @@ def main_lena_16x16_filtering():
     fig, ((ax_1, ax_2, ax_3), (ax_4, ax_5, ax_6)) = plt.subplots(nrows=2, ncols=3, sharex=True)
     # Original Image
     ax_1.set_title("Original Image")
-    ax_1.imshow(imgRead(lena)[:,:,0])
+    ax_1.imshow(imgRead(boat))
     # Sample = 10
     ax_2.set_title("Sample = 10")
     ax_2.imshow(reconstructed_img10)
@@ -499,9 +499,7 @@ def main_lena_16x16_filtering():
 
 
 main_lena_16x16_filtering()
-# Test 8x8 with Sample 10
-#filename = "Lena_8x8Sample10"
-#test_whole_image_KFOLD(boat,16,10,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename, sampleSize=100)
+
 # Test 8x8 with Sample 20
 #filename = "Text8x8Sample20"
 #test_whole_image_KFOLD(boat,8,20,filter=True,solver="Lasso", display=True, lambda1 =0.001,K_FOLD=True, Solve=True, fileName=filename)
