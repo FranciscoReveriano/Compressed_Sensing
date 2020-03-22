@@ -1,5 +1,7 @@
 import numpy as np
 from MOSEK.mosek import *
+from sklearn.feature_extraction import image
+from scipy.signal import medfilt2d
 
 def count_non_sparse_values(matrix):
     '''Function Counts the Number of sparse values in a flatten 1 dimensional matrix'''
@@ -58,7 +60,11 @@ def transform_Patch(dimension,mask, patch, T_Matrix,solver="L2",lambda1=0):
     if solver == "L1":
         alpha, res = l1norm(A_Matrix, B_Matrix)
     if solver == "L2":
-        alpha, res = l2norm(A_Matrix,B_Matrix)
+        with mosek.Env() as env:
+            with env.Task(0,0) as task:
+                alpha, res = l2norm(A_Matrix,B_Matrix)
+            task.__del__()
+        env.__del__()
     if solver == "Lasso":
         with mosek.Env() as env:
             with env.Task(0,0) as task:
@@ -68,8 +74,8 @@ def transform_Patch(dimension,mask, patch, T_Matrix,solver="L2",lambda1=0):
                     alpha = M.getVariable("w").level()
                 finally:
                     M.dispose()
-                #task.__del__()
-            #env.__del__
+            task.__del__()
+        env.__del__
 
 
     new_C = np.matmul(T_Matrix,alpha)
@@ -113,3 +119,12 @@ def create_mask(num_sample, size):
     assert(values == num_sample)                                                                                        # Error Check To Make sure Values Equal the Desired Amount
     return mask
 
+def medianFilter(matrix,dimension, P,Q):
+    patches = image.extract_patches_2d(matrix, dimension)  # Turn into Patches the main Matrix
+    new_image = []
+    for patch in patches:
+        new_patch = medfilt2d(patch, kernel_size=3)
+        new_image.append(new_patch)
+    new_image = np.asarray(new_image)
+    reconstructed_image = image.reconstruct_from_patches_2d(new_image, image_size=(P, Q))
+    return reconstructed_image

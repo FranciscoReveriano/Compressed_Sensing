@@ -25,22 +25,25 @@ def l1norm(X, y):
 
 
 def l2norm(X, y):
-    n, m = X.shape
+    try:
+        n, m = X.shape
 
-    M = Model("l2norm")
-    w = M.variable(m)
-    t = M.variable()
+        M = Model("l2norm")
+        w = M.variable(m)
+        t = M.variable()
 
-    M.objective(ObjectiveSense.Minimize, t)
+        M.objective(ObjectiveSense.Minimize, t)
 
-    res = Expr.sub(Expr.mul(X, w), y)
-    M.constraint(Expr.vstack(t, res), Domain.inQCone())
+        res = Expr.sub(Expr.mul(X, w), y)
+        M.constraint(Expr.vstack(t, res), Domain.inQCone())
 
-    # M.setLogHandler(sys.stdout)
-    M.solve()
+        # M.setLogHandler(sys.stdout)
+        M.solve()
 
-    # Return the weights vector and the residuals
-    w = w.level()
+        # Return the weights vector and the residuals
+        w = w.level()
+    finally:
+        M.dispose()
     return w, X.dot(w) - y
 
 
